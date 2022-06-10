@@ -2,9 +2,9 @@ name: 'PR Media Notifier'
 description: 'Easily share PR medias on a Slack channel'
 author: 'Donovan Fournier'
 inputs:
-  text-input:
+  slack-webhook:
     required: true
-    description: 'This is an example text input'
+    description: 'Slack Webhook URL'
 runs:
   using: 'node16'
   main: 'dist/index.js'
