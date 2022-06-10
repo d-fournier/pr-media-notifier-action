@@ -158,7 +158,9 @@ exports.parseMediaLinks = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 function parseMediaLinks(message) {
     core.debug(`Parsing message to identify links: \n${message}`);
-    return [];
+    const regexp = new RegExp(/!\[.*?\]\((.*?)\)/g);
+    const groups = [...message.matchAll(regexp)];
+    return groups.map(m => m[1]);
 }
 exports.parseMediaLinks = parseMediaLinks;
 
