@@ -1,6 +1,6 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'PR Media Notifier'
+description: 'Easily share PR medias on a Slack channel'
+author: 'Donovan Fournier'
 inputs:
   milliseconds: # change this
     required: true
