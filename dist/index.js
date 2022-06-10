@@ -40,19 +40,27 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCurrentPRDescription = void 0;
+const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 function getCurrentPRDescription(token) {
     return __awaiter(this, void 0, void 0, function* () {
         const issueNumber = github.context.issue.number;
         if (issueNumber != null) {
-            const { data: pullRequest } = yield github.getOctokit(token).rest.pulls.get({
+            const githubParams = {
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
                 pull_number: issueNumber
-            });
-            return pullRequest.body;
+            };
+            core.debug(`Fetching data for repo/PR (${githubParams})`);
+            const { data: pullRequest } = yield github
+                .getOctokit(token)
+                .rest.pulls.get(githubParams);
+            const description = pullRequest.body;
+            core.debug(`Found description ${description}`);
+            return description;
         }
         else {
+            core.warning(`Action is runnning but cannot get the issue number`);
             return null;
         }
     });
@@ -102,14 +110,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github_1 = __nccwpck_require__(5928);
+const parser_1 = __nccwpck_require__(267);
 const slack_1 = __nccwpck_require__(568);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const webhook = core.getInput('slack-webhook');
             const token = core.getInput('github-token');
-            const message = (yield (0, github_1.getCurrentPRDescription)(token)) || `No description or PR`;
-            yield (0, slack_1.notify)(webhook, message);
+            const message = (yield (0, github_1.getCurrentPRDescription)(token)) || ``;
+            const links = (0, parser_1.parseMediaLinks)(message);
+            const formattedMessage = links.map(link => `* ${link}`).join(`\n`);
+            yield (0, slack_1.notify)(webhook, formattedMessage);
         }
         catch (error) {
             if (error instanceof Error)
@@ -118,6 +129,64 @@ function run() {
     });
 }
 run();
+
+
+/***/ }),
+
+/***/ 267:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseMediaLinks = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+function parseMediaLinks(message) {
+    core.debug(`Parsing message to identify Video ...`);
+    return parseAllMediaLinks(message).concat(parseAllVideoLinks(message));
+}
+exports.parseMediaLinks = parseMediaLinks;
+function parseAllMediaLinks(message) {
+    core.debug(`... to identify standard media links}`);
+    const regexp = new RegExp(/!\[.*?\]\((.*?)\)/g);
+    const groups = [...message.matchAll(regexp)];
+    const links = groups.map(m => m[1]);
+    core.debug(`Found links: ${links}`);
+    return links;
+}
+function parseAllVideoLinks(message) {
+    core.debug(`... to identify videos`);
+    const regexp = new RegExp(/http(s)?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9@:%_+.~#?&/=]*)/g);
+    const groups = [...message.matchAll(regexp)];
+    const videos = groups
+        .map(m => m[0])
+        .filter(link => link.endsWith(`.mp4`) || link.endsWith(`.mp4`) || link.endsWith(`.mp4`));
+    core.debug(`Found videos: ${videos}`);
+    return videos;
+}
 
 
 /***/ }),
