@@ -1,6 +1,7 @@
 name: 'local-test'
 on:
   pull_request:
+    types: [opened, edited, reopened]
 
 jobs:
   test:
