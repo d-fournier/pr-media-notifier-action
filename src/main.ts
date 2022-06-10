@@ -1,9 +1,11 @@
 import * as core from '@actions/core'
+import {notify} from './slack'
 
 async function run(): Promise<void> {
   try {
-    const textInput: string = core.getInput('text-input')
-    core.info(`Runnning action with input ${textInput}`)
+    const webhook: string = core.getInput('slack-webhook')
+    const message = `Hello World from GitHub Action`
+    await notify(webhook, message)
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
   }
