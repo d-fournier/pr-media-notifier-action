@@ -52,7 +52,9 @@ function getCurrentPRDescription(token) {
                 pull_number: issueNumber
             };
             core.debug(`Fetching data for repo/PR (${githubParams})`);
-            const { data: pullRequest } = yield github.getOctokit(token).rest.pulls.get(githubParams);
+            const { data: pullRequest } = yield github
+                .getOctokit(token)
+                .rest.pulls.get(githubParams);
             const description = pullRequest.body;
             core.debug(`Found description ${description}`);
             return description;
