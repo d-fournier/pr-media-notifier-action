@@ -101,7 +101,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
-const github = __importStar(__nccwpck_require__(5438));
 const github_1 = __nccwpck_require__(5928);
 const slack_1 = __nccwpck_require__(568);
 function run() {
@@ -109,7 +108,6 @@ function run() {
         try {
             const webhook = core.getInput('slack-webhook');
             const token = core.getInput('github-token');
-            const issueNumber = github.context.issue.number;
             const message = (yield (0, github_1.getCurrentPRDescription)(token)) || `No description or PR`;
             yield (0, slack_1.notify)(webhook, message);
         }
