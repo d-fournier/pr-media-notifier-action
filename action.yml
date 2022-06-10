@@ -5,6 +5,9 @@ inputs:
   slack-webhook:
     required: true
     description: 'Slack Webhook URL'
+  github-token:
+    required: true
+    description: 'Github token'
 runs:
   using: 'node16'
   main: 'dist/index.js'
