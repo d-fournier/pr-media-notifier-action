@@ -40,19 +40,25 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCurrentPRDescription = void 0;
+const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 function getCurrentPRDescription(token) {
     return __awaiter(this, void 0, void 0, function* () {
         const issueNumber = github.context.issue.number;
         if (issueNumber != null) {
-            const { data: pullRequest } = yield github.getOctokit(token).rest.pulls.get({
+            const githubParams = {
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
                 pull_number: issueNumber
-            });
-            return pullRequest.body;
+            };
+            core.debug(`Fetching data for repo/PR (${githubParams})`);
+            const { data: pullRequest } = yield github.getOctokit(token).rest.pulls.get(githubParams);
+            const description = pullRequest.body;
+            core.debug(`Found description ${description}`);
+            return description;
         }
         else {
+            core.warning(`Action is runnning but cannot get the issue number`);
             return null;
         }
     });
@@ -111,7 +117,7 @@ function run() {
             const token = core.getInput('github-token');
             const message = (yield (0, github_1.getCurrentPRDescription)(token)) || ``;
             const links = (0, parser_1.parseMediaLinks)(message);
-            const formattedMessage = links.map(link => `* Link ${link}`).join(`\n`);
+            const formattedMessage = links.map(link => `* ${link}`).join(`\n`);
             yield (0, slack_1.notify)(webhook, formattedMessage);
         }
         catch (error) {
@@ -157,12 +163,28 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseMediaLinks = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 function parseMediaLinks(message) {
-    core.debug(`Parsing message to identify links: \n${message}`);
-    const regexp = new RegExp(/!\[.*?\]\((.*?)\)/g);
-    const groups = [...message.matchAll(regexp)];
-    return groups.map(m => m[1]);
+    core.debug(`Parsing message to identify Video ...`);
+    return parseAllMediaLinks(message).concat(parseAllVideoLinks(message));
 }
 exports.parseMediaLinks = parseMediaLinks;
+function parseAllMediaLinks(message) {
+    core.debug(`... to identify standard media links}`);
+    const regexp = new RegExp(/!\[.*?\]\((.*?)\)/g);
+    const groups = [...message.matchAll(regexp)];
+    const links = groups.map(m => m[1]);
+    core.debug(`Found links: ${links}`);
+    return links;
+}
+function parseAllVideoLinks(message) {
+    core.debug(`... to identify videos`);
+    const regexp = new RegExp(/http(s)?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9@:%_+.~#?&/=]*)/g);
+    const groups = [...message.matchAll(regexp)];
+    const videos = groups
+        .map(m => m[0])
+        .filter(link => link.endsWith(`.mp4`) || link.endsWith(`.mp4`) || link.endsWith(`.mp4`));
+    core.debug(`Found videos: ${videos}`);
+    return videos;
+}
 
 
 /***/ }),
