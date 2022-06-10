@@ -2,10 +2,9 @@ name: 'PR Media Notifier'
 description: 'Easily share PR medias on a Slack channel'
 author: 'Donovan Fournier'
 inputs:
-  milliseconds: # change this
+  text-input:
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'This is an example text input'
 runs:
   using: 'node16'
   main: 'dist/index.js'
