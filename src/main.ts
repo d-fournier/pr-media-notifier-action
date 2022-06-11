@@ -15,7 +15,6 @@ async function run(): Promise<void> {
       await notify(webhook, formattedMessage)
     } else {
       core.info(`No link found`)
-
     }
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)

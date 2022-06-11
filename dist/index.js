@@ -119,8 +119,13 @@ function run() {
             const token = core.getInput('github-token');
             const message = (yield (0, github_1.getCurrentPRDescription)(token)) || ``;
             const links = (0, parser_1.parseMediaLinks)(message);
-            const formattedMessage = links.map(link => `* ${link}`).join(`\n`);
-            yield (0, slack_1.notify)(webhook, formattedMessage);
+            if (links.length > 0) {
+                const formattedMessage = links.map(link => `* ${link}`).join(`\n`);
+                yield (0, slack_1.notify)(webhook, formattedMessage);
+            }
+            else {
+                core.info(`No link found`);
+            }
         }
         catch (error) {
             if (error instanceof Error)
