@@ -8,3 +8,32 @@ Media is also a great way to get feedbacks from your team before your code is me
 But all your team does not have access to Github or your repository.
 
 This action will scan your PRs to find all the medias that you included in the description and forward them into a slack channel. That way, your coworkers can react, comment and cheer.
+
+## Inputs
+
+| name          | required | type   | default         | description |
+| ------------- | ---      | ------ | --------------- | ----------- |
+| slack-webhook | yes      | string |                 | URL of the Slack webhook, linked to the channel you want, usually starting by `https://hooks.slack.com/services`
+| github-token  | yes      | string |                 | Token to interact with the current repository. This token is usually already in the environment variables ${{ secrets.GITHUB_TOKEN }}.
+
+## Example usage
+
+This workflow will send a message for all PR created.
+
+```yml
+name: 'share-medias'
+on:
+  pull_request:
+    types: [opened, edited, reopened]
+
+jobs:
+  share:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: d-fournier/pr-media-notifier-action@v1
+        with:
+          slack-webhook: ${{ secrets.SLACK_CUSTOM_WEBOOK }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+You can restrict the execution of this job for specific tags using `run-if` conditions.
