@@ -10,8 +10,13 @@ async function run(): Promise<void> {
 
     const message = (await getCurrentPRDescription(token)) || ``
     const links = parseMediaLinks(message)
-    const formattedMessage = links.map(link => `* ${link}`).join(`\n`)
-    await notify(webhook, formattedMessage)
+    if (links.length > 0) {
+      const formattedMessage = links.map(link => `* ${link}`).join(`\n`)
+      await notify(webhook, formattedMessage)
+    } else {
+      core.info(`No link found`)
+
+    }
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
   }
