@@ -1,5 +1,10 @@
 import * as core from '@actions/core'
-import {getPRNumber, getCurrentPRDescription, saveSharedFiles} from './github'
+import {
+  getPRNumber,
+  getCurrentPRDescription,
+  getAlreadySharedLinks,
+  saveSharedFiles
+} from './github'
 import {parseMediaLinks} from './parser'
 import {notify} from './slack'
 
@@ -13,9 +18,17 @@ async function run(): Promise<void> {
       const message = (await getCurrentPRDescription(token, issueNumber)) || ``
       const links = parseMediaLinks(message)
       if (links.length > 0) {
-        const formattedMessage = links.map(link => `* ${link}`).join(`\n`)
+        const sharedContent = await getAlreadySharedLinks(token, issueNumber)
+
+        const linksToShare = links.filter(
+          link => !sharedContent.links.includes(link)
+        )
+        const formattedMessage = linksToShare
+          .map(link => `* ${link}`)
+          .join(`\n`)
         await notify(webhook, formattedMessage)
-        saveSharedFiles(token, issueNumber, links)
+
+        saveSharedFiles(token, issueNumber, links, sharedContent.ids)
       } else {
         core.info(`No link found`)
       }
