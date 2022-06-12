@@ -67,20 +67,37 @@ exports.getCurrentPRDescription = getCurrentPRDescription;
 function saveSharedFiles(token, issueNumber, mediaUrls) {
     return __awaiter(this, void 0, void 0, function* () {
         const api = github.getOctokit(token);
+        const paramListComments = {
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            issue_number: issueNumber
+        };
+        const { data: existingComments } = yield api.rest.issues.listComments(paramListComments);
+        for (const comment of existingComments) {
+            const body = comment.body;
+            if (body != null && body.search(HEADER)) {
+                const paramDeleteComment = {
+                    owner: github.context.repo.owner,
+                    repo: github.context.repo.repo,
+                    comment_id: comment.id
+                };
+                api.rest.issues.deleteComment(paramDeleteComment);
+            }
+        }
         const formattedLinks = mediaUrls.join(`\n`);
         const message = `
-  <details> 
+  <details>
   <summary>${HEADER}</summary>
   ${formattedLinks}
   </details>
 `;
-        const param = {
+        const paramCreateComment = {
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,
             issue_number: issueNumber,
             body: message
         };
-        yield api.rest.issues.createComment(param);
+        yield api.rest.issues.createComment(paramCreateComment);
     });
 }
 exports.saveSharedFiles = saveSharedFiles;

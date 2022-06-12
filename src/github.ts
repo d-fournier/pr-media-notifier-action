@@ -31,6 +31,28 @@ export async function saveSharedFiles(
   mediaUrls: string[]
 ): Promise<void> {
   const api = github.getOctokit(token)
+
+  const paramListComments = {
+    owner: github.context.repo.owner,
+    repo: github.context.repo.repo,
+    issue_number: issueNumber
+  }
+
+  const {data: existingComments} = await api.rest.issues.listComments(
+    paramListComments
+  )
+  for (const comment of existingComments) {
+    const body = comment.body
+    if (body != null && body.search(HEADER)) {
+      const paramDeleteComment = {
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        comment_id: comment.id
+      }
+      api.rest.issues.deleteComment(paramDeleteComment)
+    }
+  }
+
   const formattedLinks = mediaUrls.join(`\n`)
   const message = `
   <details>
@@ -38,11 +60,11 @@ export async function saveSharedFiles(
   ${formattedLinks}
   </details>
 `
-  const param = {
+  const paramCreateComment = {
     owner: github.context.repo.owner,
     repo: github.context.repo.repo,
     issue_number: issueNumber,
     body: message
   }
-  await api.rest.issues.createComment(param)
+  await api.rest.issues.createComment(paramCreateComment)
 }
