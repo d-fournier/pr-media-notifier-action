@@ -199,10 +199,16 @@ function run() {
                 if (links.length > 0) {
                     const sharedContent = yield (0, github_1.getAlreadySharedLinks)(token, issueNumber);
                     const linksToShare = links.filter(link => !sharedContent.links.includes(link));
-                    const formattedMessage = linksToShare
-                        .map(link => `* ${link}`)
-                        .join(`\n`);
-                    yield (0, slack_1.notify)(webhook, formattedMessage);
+                    if (linksToShare.length > 0) {
+                        const formattedMessage = linksToShare
+                            .map(link => `* ${link}`)
+                            .join(`\n`);
+                        yield (0, slack_1.notify)(webhook, formattedMessage);
+                        core.info(`Links shared on Slack (${linksToShare})`);
+                    }
+                    else {
+                        core.info(`All links already shared`);
+                    }
                     (0, github_1.saveSharedFiles)(token, issueNumber, links, sharedContent.ids);
                 }
                 else {
