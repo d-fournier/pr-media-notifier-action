@@ -1,4 +1,4 @@
-name: 'PR Media Notifier'
+name: 'PR Media Slack Notifier'
 description: 'Easily share PR medias on a Slack channel'
 author: 'Donovan Fournier'
 inputs:
