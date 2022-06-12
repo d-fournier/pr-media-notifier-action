@@ -39,33 +39,108 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCurrentPRDescription = void 0;
+exports.saveSharedFiles = exports.getAlreadySharedLinks = exports.getCurrentPRDescription = exports.getPRNumber = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
-function getCurrentPRDescription(token) {
+const parser_1 = __nccwpck_require__(267);
+const HEADER = `Shared media on Slack`;
+function getPRNumber() {
+    return github.context.issue.number;
+}
+exports.getPRNumber = getPRNumber;
+function getCurrentPRDescription(token, issueNumber) {
     return __awaiter(this, void 0, void 0, function* () {
-        const issueNumber = github.context.issue.number;
-        if (issueNumber != null) {
-            const githubParams = {
-                owner: github.context.repo.owner,
-                repo: github.context.repo.repo,
-                pull_number: issueNumber
-            };
-            core.debug(`Fetching data for repo/PR (${githubParams})`);
-            const { data: pullRequest } = yield github
-                .getOctokit(token)
-                .rest.pulls.get(githubParams);
-            const description = pullRequest.body;
-            core.debug(`Found description ${description}`);
-            return description;
-        }
-        else {
-            core.warning(`Action is runnning but cannot get the issue number`);
-            return null;
-        }
+        const githubParams = {
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            pull_number: issueNumber
+        };
+        core.debug(`Fetching data for repo/PR (${githubParams})`);
+        const { data: pullRequest } = yield github
+            .getOctokit(token)
+            .rest.pulls.get(githubParams);
+        const description = pullRequest.body;
+        core.debug(`Found description """${description}"""`);
+        return description;
     });
 }
 exports.getCurrentPRDescription = getCurrentPRDescription;
+function getAlreadySharedLinks(token, issueNumber) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const api = github.getOctokit(token);
+        const paramListComments = {
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            issue_number: issueNumber
+        };
+        core.debug(`Fetching comments for repo/PR (${paramListComments})`);
+        const { data: existingComments } = yield api.rest.issues.listComments(paramListComments);
+        core.debug(`${existingComments.length} comment(s) found`);
+        const filteredComments = existingComments
+            .map(function (comment) {
+            const body = comment.body;
+            let result;
+            if (body != null && body.search(HEADER)) {
+                const links = (0, parser_1.parseAllLinks)(body);
+                result = {
+                    id: comment.id,
+                    links
+                };
+            }
+            else {
+                result = null;
+            }
+            return result;
+        })
+            .filter(comment => comment != null);
+        const ids = filteredComments.map(comment => comment.id);
+        const links = filteredComments.flatMap(comment => comment.links);
+        core.debug(`Comments with ids (${ids}) with links (${links})`);
+        return {
+            ids,
+            links
+        };
+    });
+}
+exports.getAlreadySharedLinks = getAlreadySharedLinks;
+function saveSharedFiles(token, issueNumber, mediaUrls, commentsToDelete) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const api = github.getOctokit(token);
+        core.debug(`Delete comments with ids (${commentsToDelete})`);
+        for (const commentId of commentsToDelete) {
+            deleteComment(token, issueNumber, commentId);
+        }
+        core.debug(`All deleted (${commentsToDelete})`);
+        const formattedLinks = mediaUrls.join(`\n`);
+        const message = `
+  <details>
+  <summary>${HEADER}</summary>
+  ${formattedLinks}
+  </details>
+`;
+        const paramCreateComment = {
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            issue_number: issueNumber,
+            body: message
+        };
+        core.debug(`Create new tracking comment (${paramCreateComment})`);
+        yield api.rest.issues.createComment(paramCreateComment);
+        core.debug(`Comment created`);
+    });
+}
+exports.saveSharedFiles = saveSharedFiles;
+function deleteComment(token, issueNumber, commentId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const api = github.getOctokit(token);
+        const paramDeleteComment = {
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            comment_id: commentId
+        };
+        yield api.rest.issues.deleteComment(paramDeleteComment);
+    });
+}
 
 
 /***/ }),
@@ -117,14 +192,31 @@ function run() {
         try {
             const webhook = core.getInput('slack-webhook');
             const token = core.getInput('github-token');
-            const message = (yield (0, github_1.getCurrentPRDescription)(token)) || ``;
-            const links = (0, parser_1.parseMediaLinks)(message);
-            if (links.length > 0) {
-                const formattedMessage = links.map(link => `* ${link}`).join(`\n`);
-                yield (0, slack_1.notify)(webhook, formattedMessage);
+            const issueNumber = (0, github_1.getPRNumber)();
+            if (issueNumber != null) {
+                const message = (yield (0, github_1.getCurrentPRDescription)(token, issueNumber)) || ``;
+                const links = (0, parser_1.parseMediaLinks)(message);
+                if (links.length > 0) {
+                    const sharedContent = yield (0, github_1.getAlreadySharedLinks)(token, issueNumber);
+                    const linksToShare = links.filter(link => !sharedContent.links.includes(link));
+                    if (linksToShare.length > 0) {
+                        const formattedMessage = linksToShare
+                            .map(link => `* ${link}`)
+                            .join(`\n`);
+                        yield (0, slack_1.notify)(webhook, formattedMessage);
+                        core.info(`Links shared on Slack (${linksToShare})`);
+                    }
+                    else {
+                        core.info(`All links already shared`);
+                    }
+                    (0, github_1.saveSharedFiles)(token, issueNumber, links, sharedContent.ids);
+                }
+                else {
+                    core.info(`No link found`);
+                }
             }
             else {
-                core.info(`No link found`);
+                core.setFailed('No PR linked to this action');
             }
         }
         catch (error) {
@@ -167,7 +259,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.parseMediaLinks = void 0;
+exports.parseAllLinks = exports.parseMediaLinks = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 function parseMediaLinks(message) {
     core.debug(`Parsing message to identify Video ...`);
@@ -182,13 +274,15 @@ function parseAllMediaLinks(message) {
     core.debug(`Found links: ${links}`);
     return links;
 }
-function parseAllVideoLinks(message) {
-    core.debug(`... to identify videos`);
+function parseAllLinks(message) {
     const regexp = new RegExp(/http(s)?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9@:%_+.~#?&/=]*)/g);
     const groups = [...message.matchAll(regexp)];
-    const videos = groups
-        .map(m => m[0])
-        .filter(link => link.endsWith(`.mp4`) || link.endsWith(`.mp4`) || link.endsWith(`.mp4`));
+    return groups.map(m => m[0]);
+}
+exports.parseAllLinks = parseAllLinks;
+function parseAllVideoLinks(message) {
+    core.debug(`... to identify videos`);
+    const videos = parseAllLinks(message).filter(link => link.endsWith(`.mp4`) || link.endsWith(`.mov`) || link.endsWith(`.webm`));
     core.debug(`Found videos: ${videos}`);
     return videos;
 }
