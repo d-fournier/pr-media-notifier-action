@@ -39,33 +39,51 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCurrentPRDescription = void 0;
+exports.saveSharedFiles = exports.getCurrentPRDescription = exports.getPRNumber = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
-function getCurrentPRDescription(token) {
+const HEADER = `Shared media on Slack`;
+function getPRNumber() {
+    return github.context.issue.number;
+}
+exports.getPRNumber = getPRNumber;
+function getCurrentPRDescription(token, issueNumber) {
     return __awaiter(this, void 0, void 0, function* () {
-        const issueNumber = github.context.issue.number;
-        if (issueNumber != null) {
-            const githubParams = {
-                owner: github.context.repo.owner,
-                repo: github.context.repo.repo,
-                pull_number: issueNumber
-            };
-            core.debug(`Fetching data for repo/PR (${githubParams})`);
-            const { data: pullRequest } = yield github
-                .getOctokit(token)
-                .rest.pulls.get(githubParams);
-            const description = pullRequest.body;
-            core.debug(`Found description ${description}`);
-            return description;
-        }
-        else {
-            core.warning(`Action is runnning but cannot get the issue number`);
-            return null;
-        }
+        const githubParams = {
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            pull_number: issueNumber
+        };
+        core.debug(`Fetching data for repo/PR (${githubParams})`);
+        const { data: pullRequest } = yield github
+            .getOctokit(token)
+            .rest.pulls.get(githubParams);
+        const description = pullRequest.body;
+        core.debug(`Found description ${description}`);
+        return description;
     });
 }
 exports.getCurrentPRDescription = getCurrentPRDescription;
+function saveSharedFiles(token, issueNumber, mediaUrls) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const api = github.getOctokit(token);
+        const formattedLinks = mediaUrls.join(`\n`);
+        const message = `
+  <details> 
+  <summary>${HEADER}</summary>
+  ${formattedLinks}
+  </details>
+`;
+        const param = {
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            issue_number: issueNumber,
+            body: message
+        };
+        yield api.rest.issues.createComment(param);
+    });
+}
+exports.saveSharedFiles = saveSharedFiles;
 
 
 /***/ }),
@@ -117,14 +135,21 @@ function run() {
         try {
             const webhook = core.getInput('slack-webhook');
             const token = core.getInput('github-token');
-            const message = (yield (0, github_1.getCurrentPRDescription)(token)) || ``;
-            const links = (0, parser_1.parseMediaLinks)(message);
-            if (links.length > 0) {
-                const formattedMessage = links.map(link => `* ${link}`).join(`\n`);
-                yield (0, slack_1.notify)(webhook, formattedMessage);
+            const issueNumber = (0, github_1.getPRNumber)();
+            if (issueNumber != null) {
+                const message = (yield (0, github_1.getCurrentPRDescription)(token, issueNumber)) || ``;
+                const links = (0, parser_1.parseMediaLinks)(message);
+                if (links.length > 0) {
+                    const formattedMessage = links.map(link => `* ${link}`).join(`\n`);
+                    yield (0, slack_1.notify)(webhook, formattedMessage);
+                    (0, github_1.saveSharedFiles)(token, issueNumber, links);
+                }
+                else {
+                    core.info(`No link found`);
+                }
             }
             else {
-                core.info(`No link found`);
+                core.setFailed('No PR linked to this action');
             }
         }
         catch (error) {
