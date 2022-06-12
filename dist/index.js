@@ -85,7 +85,7 @@ function getPRData(token, issueNumber) {
         return {
             title: pullRequest.title,
             description,
-            authorName: (_a = pullRequest.user) === null || _a === void 0 ? void 0 : _a.name
+            authorName: (_a = pullRequest.user) === null || _a === void 0 ? void 0 : _a.login
         };
     });
 }

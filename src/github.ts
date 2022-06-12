@@ -37,7 +37,7 @@ export async function getPRData(
   return {
     title: pullRequest.title,
     description,
-    authorName: pullRequest.user?.name
+    authorName: pullRequest.user?.login
   }
 }
 
