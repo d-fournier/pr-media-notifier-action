@@ -1,6 +1,26 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 7556:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.formatSharedMessage = void 0;
+function formatSharedMessage(title, authorName, linksToShare) {
+    let header = `A new media for \`${title}\``;
+    if (authorName != null && authorName !== undefined) {
+        header = header.concat(` by @${authorName}`);
+    }
+    header = header.concat(`\n`);
+    return header.concat(linksToShare.map(link => `* ${link}`).join(`\n`));
+}
+exports.formatSharedMessage = formatSharedMessage;
+
+
+/***/ }),
+
 /***/ 5928:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -190,6 +210,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github_1 = __nccwpck_require__(5928);
+const formatter_1 = __nccwpck_require__(7556);
 const parser_1 = __nccwpck_require__(267);
 const slack_1 = __nccwpck_require__(568);
 function run() {
@@ -205,12 +226,7 @@ function run() {
                     const sharedContent = yield (0, github_1.getAlreadySharedLinks)(token, issueNumber);
                     const linksToShare = links.filter(link => !sharedContent.links.includes(link));
                     if (linksToShare.length > 0) {
-                        let title = `A new media for \`${pr.title}\``;
-                        if (pr.authorName != null && pr.authorName !== undefined) {
-                            title = title.concat(` by ${pr.authorName}`);
-                        }
-                        title = title.concat(`\n`);
-                        const formattedMessage = title.concat(linksToShare.map(link => `* ${link}`).join(`\n`));
+                        const formattedMessage = (0, formatter_1.formatSharedMessage)(pr.title, pr.authorName, linksToShare);
                         yield (0, slack_1.notify)(webhook, formattedMessage);
                         core.info(`Links shared on Slack (${linksToShare})`);
                     }

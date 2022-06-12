@@ -5,6 +5,7 @@ import {
   getAlreadySharedLinks,
   saveSharedFiles
 } from './github'
+import {formatSharedMessage} from './formatter'
 import {parseMediaLinks} from './parser'
 import {notify} from './slack'
 
@@ -24,16 +25,11 @@ async function run(): Promise<void> {
           link => !sharedContent.links.includes(link)
         )
         if (linksToShare.length > 0) {
-          let title = `A new media for \`${pr.title}\``
-          if (pr.authorName != null && pr.authorName !== undefined) {
-            title = title.concat(` by ${pr.authorName}`)
-          }
-          title = title.concat(`\n`)
-
-          const formattedMessage = title.concat(
-            linksToShare.map(link => `* ${link}`).join(`\n`)
+          const formattedMessage = formatSharedMessage(
+            pr.title,
+            pr.authorName,
+            linksToShare
           )
-
           await notify(webhook, formattedMessage)
           core.info(`Links shared on Slack (${linksToShare})`)
         } else {
