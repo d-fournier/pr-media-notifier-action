@@ -4,6 +4,12 @@ import {parseAllLinks} from './parser'
 
 const HEADER = `Shared media on Slack`
 
+type PRDate = {
+  title: string
+  description: string | null
+  authorName: string | null | undefined
+}
+
 type SharedContent = {
   ids: number[]
   links: string[]
@@ -13,10 +19,10 @@ export function getPRNumber(): number {
   return github.context.issue.number
 }
 
-export async function getCurrentPRDescription(
+export async function getPRData(
   token: string,
   issueNumber: number
-): Promise<string | null> {
+): Promise<PRDate | null> {
   const githubParams = {
     owner: github.context.repo.owner,
     repo: github.context.repo.repo,
@@ -28,7 +34,11 @@ export async function getCurrentPRDescription(
     .rest.pulls.get(githubParams)
   const description = pullRequest.body
   core.debug(`Found description """${description}"""`)
-  return description
+  return {
+    title: pullRequest.title,
+    description,
+    authorName: pullRequest.user?.login
+  }
 }
 
 export async function getAlreadySharedLinks(
