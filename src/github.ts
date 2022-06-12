@@ -27,7 +27,7 @@ export async function getCurrentPRDescription(
     .getOctokit(token)
     .rest.pulls.get(githubParams)
   const description = pullRequest.body
-  core.debug(`Found description ${description}`)
+  core.debug(`Found description """${description}"""`)
   return description
 }
 
@@ -42,10 +42,13 @@ export async function getAlreadySharedLinks(
     repo: github.context.repo.repo,
     issue_number: issueNumber
   }
+  core.debug(`Fetching comments for repo/PR (${paramListComments})`)
 
   const {data: existingComments} = await api.rest.issues.listComments(
     paramListComments
   )
+
+  core.debug(`${existingComments.length} comment(s) found`)
 
   const filteredComments = existingComments
     .map(function (comment) {
@@ -66,6 +69,8 @@ export async function getAlreadySharedLinks(
 
   const ids = filteredComments.map(comment => comment!.id)
   const links = filteredComments.flatMap(comment => comment!.links)
+
+  core.debug(`Comments with ids (${ids}) with links (${links})`)
   return {
     ids,
     links
@@ -80,9 +85,11 @@ export async function saveSharedFiles(
 ): Promise<void> {
   const api = github.getOctokit(token)
 
+  core.debug(`Delete comments with ids (${commentsToDelete})`)
   for (const commentId of commentsToDelete) {
     deleteComment(token, issueNumber, commentId)
   }
+  core.debug(`All deleted (${commentsToDelete})`)
 
   const formattedLinks = mediaUrls.join(`\n`)
   const message = `
@@ -97,7 +104,9 @@ export async function saveSharedFiles(
     issue_number: issueNumber,
     body: message
   }
+  core.debug(`Create new tracking comment (${paramCreateComment})`)
   await api.rest.issues.createComment(paramCreateComment)
+  core.debug(`Comment created`)
 }
 
 async function deleteComment(

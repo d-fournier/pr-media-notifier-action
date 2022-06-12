@@ -60,7 +60,7 @@ function getCurrentPRDescription(token, issueNumber) {
             .getOctokit(token)
             .rest.pulls.get(githubParams);
         const description = pullRequest.body;
-        core.debug(`Found description ${description}`);
+        core.debug(`Found description """${description}"""`);
         return description;
     });
 }
@@ -73,7 +73,9 @@ function getAlreadySharedLinks(token, issueNumber) {
             repo: github.context.repo.repo,
             issue_number: issueNumber
         };
+        core.debug(`Fetching comments for repo/PR (${paramListComments})`);
         const { data: existingComments } = yield api.rest.issues.listComments(paramListComments);
+        core.debug(`${existingComments.length} comment(s) found`);
         const filteredComments = existingComments
             .map(function (comment) {
             const body = comment.body;
@@ -93,6 +95,7 @@ function getAlreadySharedLinks(token, issueNumber) {
             .filter(comment => comment != null);
         const ids = filteredComments.map(comment => comment.id);
         const links = filteredComments.flatMap(comment => comment.links);
+        core.debug(`Comments with ids (${ids}) with links (${links})`);
         return {
             ids,
             links
@@ -103,9 +106,11 @@ exports.getAlreadySharedLinks = getAlreadySharedLinks;
 function saveSharedFiles(token, issueNumber, mediaUrls, commentsToDelete) {
     return __awaiter(this, void 0, void 0, function* () {
         const api = github.getOctokit(token);
+        core.debug(`Delete comments with ids (${commentsToDelete})`);
         for (const commentId of commentsToDelete) {
             deleteComment(token, issueNumber, commentId);
         }
+        core.debug(`All deleted (${commentsToDelete})`);
         const formattedLinks = mediaUrls.join(`\n`);
         const message = `
   <details>
@@ -119,7 +124,9 @@ function saveSharedFiles(token, issueNumber, mediaUrls, commentsToDelete) {
             issue_number: issueNumber,
             body: message
         };
+        core.debug(`Create new tracking comment (${paramCreateComment})`);
         yield api.rest.issues.createComment(paramCreateComment);
+        core.debug(`Comment created`);
     });
 }
 exports.saveSharedFiles = saveSharedFiles;
