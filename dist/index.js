@@ -39,7 +39,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.saveSharedFiles = exports.getAlreadySharedLinks = exports.getCurrentPRDescription = exports.getPRNumber = void 0;
+exports.saveSharedFiles = exports.getAlreadySharedLinks = exports.getPRData = exports.getPRNumber = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const parser_1 = __nccwpck_require__(267);
@@ -48,7 +48,8 @@ function getPRNumber() {
     return github.context.issue.number;
 }
 exports.getPRNumber = getPRNumber;
-function getCurrentPRDescription(token, issueNumber) {
+function getPRData(token, issueNumber) {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         const githubParams = {
             owner: github.context.repo.owner,
@@ -61,10 +62,14 @@ function getCurrentPRDescription(token, issueNumber) {
             .rest.pulls.get(githubParams);
         const description = pullRequest.body;
         core.debug(`Found description """${description}"""`);
-        return description;
+        return {
+            title: pullRequest.title,
+            description,
+            authorName: (_a = pullRequest.user) === null || _a === void 0 ? void 0 : _a.name
+        };
     });
 }
-exports.getCurrentPRDescription = getCurrentPRDescription;
+exports.getPRData = getPRData;
 function getAlreadySharedLinks(token, issueNumber) {
     return __awaiter(this, void 0, void 0, function* () {
         const api = github.getOctokit(token);
@@ -194,15 +199,18 @@ function run() {
             const token = core.getInput('github-token');
             const issueNumber = (0, github_1.getPRNumber)();
             if (issueNumber != null) {
-                const message = (yield (0, github_1.getCurrentPRDescription)(token, issueNumber)) || ``;
-                const links = (0, parser_1.parseMediaLinks)(message);
-                if (links.length > 0) {
+                const pr = yield (0, github_1.getPRData)(token, issueNumber);
+                const links = (0, parser_1.parseMediaLinks)((pr === null || pr === void 0 ? void 0 : pr.description) || ``);
+                if (pr != null && links.length > 0) {
                     const sharedContent = yield (0, github_1.getAlreadySharedLinks)(token, issueNumber);
                     const linksToShare = links.filter(link => !sharedContent.links.includes(link));
                     if (linksToShare.length > 0) {
-                        const formattedMessage = linksToShare
-                            .map(link => `* ${link}`)
-                            .join(`\n`);
+                        let title = `A new media for \`${pr.title}\``;
+                        if (pr.authorName != null && pr.authorName !== undefined) {
+                            title = title.concat(` by ${pr.authorName}`);
+                        }
+                        title = title.concat(`\n`);
+                        const formattedMessage = title.concat(linksToShare.map(link => `* ${link}`).join(`\n`));
                         yield (0, slack_1.notify)(webhook, formattedMessage);
                         core.info(`Links shared on Slack (${linksToShare})`);
                     }

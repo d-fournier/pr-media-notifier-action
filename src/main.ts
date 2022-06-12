@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import {
   getPRNumber,
-  getCurrentPRDescription,
+  getPRData,
   getAlreadySharedLinks,
   saveSharedFiles
 } from './github'
@@ -15,18 +15,25 @@ async function run(): Promise<void> {
 
     const issueNumber = getPRNumber()
     if (issueNumber != null) {
-      const message = (await getCurrentPRDescription(token, issueNumber)) || ``
-      const links = parseMediaLinks(message)
-      if (links.length > 0) {
+      const pr = await getPRData(token, issueNumber)
+      const links = parseMediaLinks(pr?.description || ``)
+      if (pr != null && links.length > 0) {
         const sharedContent = await getAlreadySharedLinks(token, issueNumber)
 
         const linksToShare = links.filter(
           link => !sharedContent.links.includes(link)
         )
         if (linksToShare.length > 0) {
-          const formattedMessage = linksToShare
-            .map(link => `* ${link}`)
-            .join(`\n`)
+          let title = `A new media for \`${pr.title}\``
+          if (pr.authorName != null && pr.authorName !== undefined) {
+            title = title.concat(` by ${pr.authorName}`)
+          }
+          title = title.concat(`\n`)
+
+          const formattedMessage = title.concat(
+            linksToShare.map(link => `* ${link}`).join(`\n`)
+          )
+
           await notify(webhook, formattedMessage)
           core.info(`Links shared on Slack (${linksToShare})`)
         } else {
