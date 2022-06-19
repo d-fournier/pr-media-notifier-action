@@ -1,13 +1,15 @@
 export function formatSharedMessage(
+  owner: string,
+  repo: string,
+  issueNumber: number,
+  linkToPr: string,
   title: string,
-  authorName: string | null | undefined,
-  linksToShare: string[]
+  authorName: string | null | undefined
 ): string {
-  let header = `A new media for \`${title}\``
+  const header = `<${linkToPr}|${owner}/${repo}#${issueNumber}>`
+  let message = `> New media for \`${title}\``
   if (authorName != null && authorName !== undefined) {
-    header = header.concat(` by @${authorName}`)
+    message = message.concat(` by @${authorName}`)
   }
-  header = header.concat(`\n`)
-
-  return header.concat(linksToShare.map(link => `* ${link}`).join(`\n`))
+  return `${header}\n${message}`
 }

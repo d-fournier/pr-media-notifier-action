@@ -26,13 +26,15 @@ on:
   pull_request:
     types: [opened, edited, reopened]
 
-jobs:
   share:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - uses: d-fournier/pr-media-notifier-action@v1
+      - uses: actions/checkout@v3
+      - uses: ./
         with:
-          slack-webhook: ${{ secrets.SLACK_CUSTOM_WEBOOK }}
+          slack-token: ${{ secrets.SLACK_APP_KEY }}
+          slack-channel: ${{ secrets.SLACK_CHANNEL_ID }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
