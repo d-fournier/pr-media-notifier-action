@@ -23,3 +23,7 @@ export async function downloadFile(
 export function deleteFile(localPath: string): void {
   fs.unlinkSync(localPath)
 }
+
+export function createDir(name: string): void {
+  fs.mkdirSync(name)
+}

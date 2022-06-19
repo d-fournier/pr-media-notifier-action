@@ -42,7 +42,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.deleteFile = exports.downloadFile = void 0;
+exports.createDir = exports.deleteFile = exports.downloadFile = void 0;
 const stream = __importStar(__nccwpck_require__(2781));
 const util_1 = __nccwpck_require__(3837);
 const axios_1 = __importDefault(__nccwpck_require__(6545));
@@ -65,6 +65,10 @@ function deleteFile(localPath) {
     fs_1.default.unlinkSync(localPath);
 }
 exports.deleteFile = deleteFile;
+function createDir(name) {
+    fs_1.default.mkdirSync(name);
+}
+exports.createDir = createDir;
 
 
 /***/ }),
@@ -301,6 +305,7 @@ function run() {
                     const linksToShare = links.filter(link => !sharedContent.links.includes(link));
                     if (linksToShare.length > 0) {
                         const formattedMessage = (0, formatter_1.formatSharedMessage)(pr.owner, pr.repo, pr.issue, pr.title, pr.authorName);
+                        (0, files_1.createDir)("prSharing");
                         for (const link of linksToShare) {
                             const filename = link.substring(link.lastIndexOf('/') + 1);
                             const localPath = `./prSharing/${filename}`;

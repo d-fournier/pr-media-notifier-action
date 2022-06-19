@@ -6,7 +6,7 @@ import {
   saveSharedFiles
 } from './github'
 import {formatSharedMessage} from './formatter'
-import {deleteFile, downloadFile} from './files'
+import {createDir, deleteFile, downloadFile} from './files'
 import {parseMediaLinks} from './parser'
 import {sendFile} from './slack'
 
@@ -34,6 +34,8 @@ async function run(): Promise<void> {
             pr.title,
             pr.authorName
           )
+          createDir('prSharing')
+
           for (const link of linksToShare) {
             const filename = link.substring(link.lastIndexOf('/') + 1)
             const localPath = `./prSharing/${filename}`
