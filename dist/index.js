@@ -419,36 +419,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sendFile = exports.sendMessage = exports.notify = void 0;
-const axios_1 = __importDefault(__nccwpck_require__(6545));
+exports.sendFile = void 0;
 const web_api_1 = __nccwpck_require__(431);
 const fs_1 = __importDefault(__nccwpck_require__(7147));
-function notify(hookUrl, text) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return axios_1.default.post(hookUrl, {
-            text
-        });
-    });
-}
-exports.notify = notify;
-function sendMessage(token, channelId, message) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const client = new web_api_1.WebClient(token, {
-            logLevel: web_api_1.LogLevel.DEBUG
-        });
-        yield client.chat.postMessage({
-            channel: channelId,
-            text: message
-        });
-    });
-}
-exports.sendMessage = sendMessage;
 function sendFile(token, channelId, message, fileName) {
     return __awaiter(this, void 0, void 0, function* () {
         const client = new web_api_1.WebClient(token, {
             logLevel: web_api_1.LogLevel.DEBUG
         });
         yield client.files.upload({
+            unfurl_links: false,
             channels: channelId,
             initial_comment: message,
             file: fs_1.default.createReadStream(fileName)
