@@ -8,6 +8,7 @@ type PRData = {
   owner: string
   repo: string
   issue: number
+  link: string
   title: string
   description: string | null
   authorName: string | null | undefined
@@ -43,6 +44,7 @@ export async function getPRData(
     owner,
     repo,
     issue: issueNumber,
+    link: pullRequest.html_url,
     title: pullRequest.title,
     description,
     authorName: pullRequest.user?.login

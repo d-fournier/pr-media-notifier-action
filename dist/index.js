@@ -80,12 +80,13 @@ exports.createDir = createDir;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.formatSharedMessage = void 0;
-function formatSharedMessage(owner, repo, issueNumber, title, authorName) {
-    let message = `${owner}/${repo}#${issueNumber} New media for \`${title}\``;
+function formatSharedMessage(owner, repo, issueNumber, linkToPr, title, authorName) {
+    const header = `<${linkToPr}|${owner}/${repo}#${issueNumber}>`;
+    let message = `> New media for \`${title}\``;
     if (authorName != null && authorName !== undefined) {
         message = message.concat(` by @${authorName}`);
     }
-    return message;
+    return `${header}\n${message}`;
 }
 exports.formatSharedMessage = formatSharedMessage;
 
@@ -159,6 +160,7 @@ function getPRData(token, issueNumber) {
             owner,
             repo,
             issue: issueNumber,
+            link: pullRequest.html_url,
             title: pullRequest.title,
             description,
             authorName: (_a = pullRequest.user) === null || _a === void 0 ? void 0 : _a.login
@@ -304,8 +306,8 @@ function run() {
                     const sharedContent = yield (0, github_1.getAlreadySharedLinks)(token, issueNumber);
                     const linksToShare = links.filter(link => !sharedContent.links.includes(link));
                     if (linksToShare.length > 0) {
-                        const formattedMessage = (0, formatter_1.formatSharedMessage)(pr.owner, pr.repo, pr.issue, pr.title, pr.authorName);
-                        (0, files_1.createDir)("prSharing");
+                        const formattedMessage = (0, formatter_1.formatSharedMessage)(pr.owner, pr.repo, pr.issue, pr.link, pr.title, pr.authorName);
+                        (0, files_1.createDir)('prSharing');
                         for (const link of linksToShare) {
                             const filename = link.substring(link.lastIndexOf('/') + 1);
                             const localPath = `./prSharing/${filename}`;

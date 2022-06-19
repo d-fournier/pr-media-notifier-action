@@ -31,6 +31,7 @@ async function run(): Promise<void> {
             pr.owner,
             pr.repo,
             pr.issue,
+            pr.link,
             pr.title,
             pr.authorName
           )
