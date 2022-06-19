@@ -6,12 +6,14 @@ import {
   saveSharedFiles
 } from './github'
 import {formatSharedMessage} from './formatter'
+import {deleteFile, downloadFile} from './files'
 import {parseMediaLinks} from './parser'
-import {notify} from './slack'
+import {sendFile} from './slack'
 
 async function run(): Promise<void> {
   try {
-    const webhook: string = core.getInput('slack-webhook')
+    const slackToken: string = core.getInput('slack-token')
+    const slackChannel: string = core.getInput('slack-channel')
     const token: string = core.getInput('github-token')
 
     const issueNumber = getPRNumber()
@@ -26,11 +28,24 @@ async function run(): Promise<void> {
         )
         if (linksToShare.length > 0) {
           const formattedMessage = formatSharedMessage(
+            pr.owner,
+            pr.repo,
+            pr.issue,
             pr.title,
-            pr.authorName,
-            linksToShare
+            pr.authorName
           )
-          await notify(webhook, formattedMessage)
+          for (const link of linksToShare) {
+            const filename = link.substring(link.lastIndexOf('/') + 1)
+            const localPath = `./prSharing/${filename}`
+            await downloadFile(link, localPath)
+            await sendFile(
+              slackToken,
+              slackChannel,
+              formattedMessage,
+              localPath
+            )
+            deleteFile(localPath)
+          }
           core.info(`Links shared on Slack (${linksToShare})`)
         } else {
           core.info(`All links already shared`)

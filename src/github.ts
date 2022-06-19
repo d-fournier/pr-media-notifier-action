@@ -4,7 +4,10 @@ import {parseAllLinks} from './parser'
 
 const HEADER = `Shared media on Slack`
 
-type PRDate = {
+type PRData = {
+  owner: string
+  repo: string
+  issue: number
   title: string
   description: string | null
   authorName: string | null | undefined
@@ -22,10 +25,12 @@ export function getPRNumber(): number {
 export async function getPRData(
   token: string,
   issueNumber: number
-): Promise<PRDate | null> {
+): Promise<PRData | null> {
+  const owner = github.context.repo.owner
+  const repo = github.context.repo.repo
   const githubParams = {
-    owner: github.context.repo.owner,
-    repo: github.context.repo.repo,
+    owner,
+    repo,
     pull_number: issueNumber
   }
   core.debug(`Fetching data for repo/PR (${githubParams})`)
@@ -35,6 +40,9 @@ export async function getPRData(
   const description = pullRequest.body
   core.debug(`Found description """${description}"""`)
   return {
+    owner,
+    repo,
+    issue: issueNumber,
     title: pullRequest.title,
     description,
     authorName: pullRequest.user?.login

@@ -2,9 +2,12 @@ name: 'PR Media Slack Notifier'
 description: 'Easily share PR medias on a Slack channel'
 author: 'Donovan Fournier'
 inputs:
-  slack-webhook:
+  slack-token:
     required: true
-    description: 'Slack Webhook URL'
+    description: 'Slack Token of an app with the access to your channel'
+  slack-channel:
+    required: true
+    description: 'ID/Name of the channel where you want to post your update'
   github-token:
     required: true
     description: 'Github token'
